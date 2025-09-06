@@ -7,9 +7,29 @@
 
 import os
 from typing import Dict, Any, Optional
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_community.llms import Ollama
+
+# 尝试导入各种模型，如果失败则设置为None
+try:
+    from langchain_openai import ChatOpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    ChatOpenAI = None
+    OPENAI_AVAILABLE = False
+
+try:
+    from langchain_anthropic import ChatAnthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ChatAnthropic = None
+    ANTHROPIC_AVAILABLE = False
+
+try:
+    from langchain_community.llms import Ollama
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    Ollama = None
+    OLLAMA_AVAILABLE = False
+
 from src.config.fast_models_config import fast_models_config
 
 class FastLLMManager:
@@ -51,6 +71,9 @@ class FastLLMManager:
     
     def _create_local_model(self):
         """创建本地模型实例"""
+        if not OLLAMA_AVAILABLE:
+            raise ImportError("Ollama模块未安装，无法使用本地模型")
+        
         if self.current_model in ["local_llama", "phi", "gemma"]:
             # 使用Ollama运行本地模型
             return Ollama(
@@ -63,6 +86,9 @@ class FastLLMManager:
     def _create_api_model(self):
         """创建API模型实例 - 优化版配置"""
         if self.current_model == "openai_gpt35":
+            if not OPENAI_AVAILABLE:
+                raise ImportError("OpenAI模块未安装，无法使用OpenAI模型")
+            
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 raise ValueError("未设置OPENAI_API_KEY环境变量")
@@ -77,6 +103,9 @@ class FastLLMManager:
             )
             
         elif self.current_model == "anthropic_claude":
+            if not ANTHROPIC_AVAILABLE:
+                raise ImportError("Anthropic模块未安装，无法使用Claude模型")
+            
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
                 raise ValueError("未设置ANTHROPIC_API_KEY环境变量")

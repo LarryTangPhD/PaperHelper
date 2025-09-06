@@ -32,8 +32,11 @@ try:
     from src.config.fast_llm_manager import fast_llm_manager
     from src.config.fast_models_config import fast_models_config
     FAST_MODELS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"快速模型模块导入失败: {e}")
     FAST_MODELS_AVAILABLE = False
+    fast_llm_manager = None
+    fast_models_config = None
 
 # 页面配置
 st.set_page_config(
@@ -43,21 +46,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 初始化session state
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = "选题指导"
-if 'user_topic' not in st.session_state:
-    st.session_state.user_topic = ""
-if 'topic_analysis' not in st.session_state:
-    st.session_state.topic_analysis = None
-if 'paper_content' not in st.session_state:
-    st.session_state.paper_content = ""
-if 'annotation_result' not in st.session_state:
-    st.session_state.annotation_result = None
-if 'paper_content' not in st.session_state:
-    st.session_state.paper_content = ""
-if 'annotation_result' not in st.session_state:
-    st.session_state.annotation_result = None
+# Session state初始化已移至main.py，这里不再重复初始化
 
 # 侧边栏导航
 with st.sidebar:
@@ -728,6 +717,7 @@ def paper_annotation_page():
                         # 创建质量评估图表
                         import plotly.graph_objects as go
                         
+                        # 基础评估维度
                         categories = ['结构完整性', '学术质量', '写作风格', '引用规范']
                         values = [
                             analysis["structure_analysis"]["structure_score"],
@@ -736,15 +726,45 @@ def paper_annotation_page():
                             min(analysis["academic_quality"]["citation_count"] * 20, 100)
                         ]
                         
+                        # 如果有专业特色分析，添加到图表中
+                        if "communication_analysis" in analysis:
+                            categories.extend(['理论应用', '方法适当性', '行业关联度', '社会价值'])
+                            comm_analysis = analysis["communication_analysis"]
+                            values.extend([
+                                comm_analysis["theory_application"],
+                                comm_analysis["method_appropriateness"],
+                                comm_analysis["industry_relevance"],
+                                comm_analysis["social_value"]
+                            ])
+                        
                         fig = go.Figure(data=[
                             go.Bar(x=categories, y=values, marker_color='lightblue')
                         ])
                         fig.update_layout(
-                            title="论文质量评估",
+                            title="论文质量评估 - 综合分析",
                             yaxis=dict(range=[0, 100]),
-                            height=400
+                            height=500,
+                            xaxis_tickangle=-45
                         )
                         st.plotly_chart(fig, use_container_width=True)
+                        
+                        # 显示专业特色分析详情
+                        if "communication_analysis" in analysis:
+                            st.markdown("### 🌐 新闻传播学专业特色分析")
+                            comm_analysis = analysis["communication_analysis"]
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("理论应用", f"{comm_analysis['theory_application']:.0f}/100")
+                            with col2:
+                                st.metric("方法适当性", f"{comm_analysis['method_appropriateness']:.0f}/100")
+                            with col3:
+                                st.metric("行业关联度", f"{comm_analysis['industry_relevance']:.0f}/100")
+                            with col4:
+                                st.metric("社会价值", f"{comm_analysis['social_value']:.0f}/100")
+                            
+                            # 总体专业特色评分
+                            st.metric("专业特色总分", f"{comm_analysis['overall_specialty_score']:.0f}/100")
                     else:
                         st.warning("分析结果不完整，无法生成质量评估图表")
                 else:
