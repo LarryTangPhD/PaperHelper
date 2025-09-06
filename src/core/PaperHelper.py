@@ -103,6 +103,9 @@ with st.sidebar:
     # 获取当前页面的索引
     page_options = ["选题指导", "论文批注", "格式修正", "学习助手"]
     try:
+        # 确保current_page已初始化
+        if 'current_page' not in st.session_state:
+            st.session_state.current_page = "选题指导"
         current_index = page_options.index(st.session_state.current_page)
     except ValueError:
         current_index = 0
@@ -122,6 +125,10 @@ with st.sidebar:
     st.markdown("### 💡 智能推荐")
     
     # 根据当前页面显示不同推荐
+    # 确保current_page已初始化
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "选题指导"
+    
     if st.session_state.current_page == "选题指导":
         st.info("""
         **📚 推荐阅读**
@@ -170,6 +177,10 @@ with st.sidebar:
 # 主页面内容
 def main_page():
     st.title("📚 新传论文智能辅导系统")
+    
+    # 确保session state已初始化
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "选题指导"
     
     # 快速操作面板
     with st.container():
